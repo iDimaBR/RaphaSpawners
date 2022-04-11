@@ -1,0 +1,8 @@
+name: RaphaSpawners
+version: '${project.version}'
+main: com.github.idimabr.raphaspawners.RaphaSpawners
+prefix: RaphaSpawners
+authors: [ iDimaBR ]
+depend: [ HolographicDisplays ]
+commands:
+  spawner:

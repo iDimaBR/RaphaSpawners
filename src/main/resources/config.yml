@@ -1,0 +1,19 @@
+MySQL:
+  Host: 'localhost'
+  Database: 'raphaspawners'
+  Username: 'root'
+  Password: ''
+
+Generator:
+  LimitStack: 30
+  DistanceStack: 10
+  SilkTouch: false
+  WorldBlackList:
+    - 'worldexample'
+
+Entities:
+  LimitStack: 120
+  DistanceStack: 20
+  WorldBlackList:
+    - 'worldexample'
+
