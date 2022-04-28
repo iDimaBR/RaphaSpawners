@@ -18,6 +18,8 @@ public class CacheSQL{
             try(ResultSet rs = ps.executeQuery()) {
                 while(rs.next()){
                     Spawner spawner = AdapterSpawner.toSpawner(rs);
+                    if(spawner == null)
+                        System.out.println("Spawner não existe mais, pulando...");
                 }
             }
         } catch (Exception error) {

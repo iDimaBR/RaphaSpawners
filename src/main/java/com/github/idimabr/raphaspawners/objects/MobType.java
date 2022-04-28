@@ -1,5 +1,10 @@
 package com.github.idimabr.raphaspawners.objects;
 
+import org.bukkit.entity.EntityType;
+
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 public enum MobType {
 
     AXOLOTL("Axalote"),
@@ -91,6 +96,13 @@ public enum MobType {
 
     public String getName() {
         return this.name;
+    }
+
+    public static boolean hasExists(String name){
+        for (EntityType value : Arrays.stream(EntityType.values()).filter(EntityType::isAlive).collect(Collectors.toList())) {
+            if(value.name().equalsIgnoreCase(name)) return true;
+        }
+        return false;
     }
 
     @Override

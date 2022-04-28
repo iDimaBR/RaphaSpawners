@@ -5,15 +5,31 @@ MySQL:
   Password: ''
 
 Generator:
-  LimitStack: 30
+  LimitStack: 200
   DistanceStack: 10
+  LimitMembers: 21
   SilkTouch: false
+  RandomValueSpawn: false
+  Delay:
+    Init: 20
   WorldBlackList:
     - 'worldexample'
+  MobHead:
+    Enabled: true
+  ItemStack:
+    Name: "&eGerador de Monstros"
+    Lore:
+      - "&7Tipo: &f%spawner_type%"
+  Hologram:
+    Height: 3
+    Lines:
+      - "&ex%quantity_generators% Geradores de %spawner_type%"
+      - "&eProprietário: &f%owner%"
+      - "&eStatus: &f%spawner_status%"
 
 Entities:
   LimitStack: 120
-  DistanceStack: 20
+  DistanceStack: 25
   WorldBlackList:
     - 'worldexample'
 

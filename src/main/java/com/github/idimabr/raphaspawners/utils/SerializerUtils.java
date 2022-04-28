@@ -24,13 +24,13 @@ public class SerializerUtils {
     }
 
     public static Location convertLocation(String string){
+        if(!string.contains(";")) return null;
         String[] values = string.split(";");
 
         World world = Bukkit.getWorld(values[0]);
         int x = Integer.parseInt(values[1]);
         int y = Integer.parseInt(values[2]);
         int z = Integer.parseInt(values[3]);
-
         return new Location(world, x, y, z);
     }
 

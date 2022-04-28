@@ -43,6 +43,11 @@ public class ItemBuilder {
 
 	}
 
+	public ItemBuilder setAmount(int amount){
+		is.setAmount(amount);
+		return this;
+	}
+
 	public ItemBuilder setDurability(short durabilidade) {
 
 		is.setDurability(durabilidade);
@@ -114,6 +119,15 @@ public class ItemBuilder {
 
 		return this;
 
+	}
+
+	public ItemBuilder setGlow(boolean value) {
+		if(!value) return this;
+		is.addUnsafeEnchantment(Enchantment.ARROW_INFINITE, 1);
+		final ItemMeta meta = is.getItemMeta();
+		meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+		is.setItemMeta(meta);
+		return this;
 	}
 
 	public ItemBuilder setInfinityDurability() {

@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 
 public class ItemStackListener implements Listener {
 
+    @EventHandler
     public void spawnItem(ItemSpawnEvent e) {
         Item item = e.getEntity();
 

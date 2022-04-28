@@ -1,18 +1,16 @@
 package com.github.idimabr.raphaspawners.listeners;
 
 import com.github.idimabr.raphaspawners.RaphaSpawners;
+import com.github.idimabr.raphaspawners.objects.MobType;
 import com.github.idimabr.raphaspawners.objects.PermissionType;
 import com.github.idimabr.raphaspawners.objects.Spawner;
 import com.github.idimabr.raphaspawners.objects.SpawnerLog;
-import com.github.idimabr.raphaspawners.utils.ItemBuilder;
 import com.github.idimabr.raphaspawners.utils.NBTAPI;
+import com.github.idimabr.raphaspawners.utils.SpawnerUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.enchantments.Enchantment;
@@ -55,40 +53,31 @@ public class SpawnerListener implements Listener {
         int limitStack = plugin.getConfiguration().getInt("Generator.LimitStack");
 
         if(plugin.getConfiguration().getStringList("WorldBlackList").contains(block.getWorld().getName())){
-            player.sendMessage("§cOs geradores estão desativados nesse mundo.");
+            player.sendMessage(plugin.getMessages().getString("WorldBlocked").replace("&","§"));
             return;
         }
 
         ItemStack item = e.getItemInHand();
         if(item == null) return;
 
-        if(!item.hasItemMeta()){
-            player.sendMessage("§cGerador não encontrado.");
-            e.setCancelled(true);
-            return;
-        }
-
-        if(!item.getItemMeta().hasDisplayName()){
-            player.sendMessage("§cGerador não encontrado.");
-            e.setCancelled(true);
-            return;
-        }
-
-        if(!item.getItemMeta().getDisplayName().contains("Gerador de Monstros")){
-            player.sendMessage("§cGerador não encontrado.");
-            e.setCancelled(true);
+        if(!NBTAPI.hasTag(item, "spawnertype")) {
+            player.sendMessage(plugin.getMessages().getString("GeneratorNotFound").replace("&","§"));
             return;
         }
 
         Location blockLocation = block.getLocation();
-
-        if(!NBTAPI.hasTag(item, "spawnertype")) return;
         String stringType = NBTAPI.getTag(item, "spawnertype");
-
         EntityType type = EntityType.valueOf(stringType.toUpperCase());
         if(type.getEntityClass() == null) return;
 
-        for (Block nearby : getNearbyBlocks(block.getLocation(), plugin.getConfiguration().getInt("Generator.DistanceStack"))) {
+        if(!player.hasPermission(plugin.getConfigEntities().getString(type.name() + ".Permission"))){
+            e.setCancelled(true);
+            player.sendMessage(plugin.getMessages().getString("Errors.NoPermissionTypeGenerator").replace("%spawner_type%", MobType.valueOf(type.name()).getName()).replace("&","§"));
+            return;
+        }
+
+        List<Block> blocksNearby = getNearbyBlocks(block.getLocation(), plugin.getConfiguration().getInt("Generator.DistanceStack"));
+        for (Block nearby : blocksNearby) {
             if (nearby.getType() != Material.MOB_SPAWNER) continue;
 
             final Spawner spawner = RaphaSpawners.getSpawners().get(nearby.getLocation());
@@ -98,24 +87,87 @@ public class SpawnerListener implements Listener {
             if(!spawner.getOwner().equals(player.getUniqueId()))
                 if(spawner.getMembers().containsKey(player.getUniqueId())){
                     if(!spawner.memberHasPermission(PermissionType.ADD_MOBSPAWNERS, player.getUniqueId())){
-                        player.sendMessage("§cVocê não tem permissão para '§7" + PermissionType.ADD_MOBSPAWNERS.getName() + "§c' nesse gerador.");
+                        player.sendMessage(plugin.getMessages().getString("Errors.NoHaveThePermission").replace("&","§").replace("%permission%", PermissionType.ADD_MOBSPAWNERS.getName()));
                         e.setCancelled(true);
                         return;
                     }
                 }else{
-                    player.sendMessage("§cVocê não tem permissão para '§7" + PermissionType.ADD_MOBSPAWNERS.getName() + "§c' nesse gerador.");
+                    player.sendMessage(plugin.getMessages().getString("Errors.NoHaveThePermission").replace("&","§").replace("%permission%", PermissionType.ADD_MOBSPAWNERS.getName()));
                     e.setCancelled(true);
                     return;
                 }
 
-            block.getState().setType(Material.AIR);
-            block.setType(Material.AIR);
+            e.setCancelled(true);
 
             if(player.isSneaking() && item.getAmount() > 1){
-                spawner.setQuantity(spawner.getQuantity() + item.getAmount());
-                spawner.updateHologram();
-                player.setItemInHand(null);
-                player.sendMessage("§aColocou todos geradores de uma vez!");
+                for(int i = 0;i < item.getAmount();i++){
+                    if(spawner.getQuantity() >= limitStack) {
+                        player.sendMessage(plugin.getMessages().getString("Errors.LimitExcedeed")
+                                .replace("&","§")
+                                .replace("%limitstack%", limitStack+"")
+                        );
+                        e.setCancelled(true);
+                        return;
+                    }
+
+                    spawner.setQuantity(spawner.getQuantity() + 1);
+                    ItemStack newHand = player.getItemInHand().clone();
+                    newHand.setAmount(newHand.getAmount() - 1);
+                    player.setItemInHand(newHand);
+
+                    SpawnerLog log = new SpawnerLog("§eGeradores adicionados");
+                    log.setLore(Arrays.asList(
+                            "",
+                            "§7Usuário: §f" + player.getName(),
+                            "§7Adicionou: §f" + item.getAmount(),
+                            "§7Data: §f" + log.getDate()
+                    ));
+                    spawner.addLog(log);
+
+                    spawner.updateHologram();
+                }
+
+                player.sendMessage(plugin.getMessages().getString("GeneratorPlaced").replace("&","§").replace("%quantity_generators%", item.getAmount()+"").replace("%spawner_type%", spawner.getEntityName()));
+                return;
+            }
+
+            if(spawner.getQuantity() >= limitStack) {
+                player.sendMessage(plugin.getMessages().getString("Errors.LimitExcedeed")
+                        .replace("&", "§")
+                        .replace("%limitstack%", limitStack + "")
+                );
+                e.setCancelled(true);
+                return;
+            }
+
+            spawner.setQuantity(spawner.getQuantity() + 1);
+            spawner.updateHologram();
+
+            ItemStack newHand = player.getItemInHand().clone();
+            newHand.setAmount(newHand.getAmount() - 1);
+            player.setItemInHand(newHand);
+
+            player.sendMessage(plugin.getMessages().getString("GeneratorPlaced").replace("&","§").replace("%quantity_generators%", 1+"").replace("%spawner_type%", spawner.getEntityName()));
+            return;
+        }
+
+        Spawner spawner = new Spawner(blockLocation, type, player.getUniqueId());
+        if(player.isSneaking() && item.getAmount() > 1) {
+            spawner.setQuantity(0);
+            for (int i = 0; i < item.getAmount(); i++) {
+                if (spawner.getQuantity() >= limitStack) {
+                    player.sendMessage(plugin.getMessages().getString("Errors.LimitExcedeed")
+                            .replace("&", "§")
+                            .replace("%limitstack%", limitStack + "")
+                    );
+                    e.setCancelled(true);
+                    return;
+                }
+
+                spawner.setQuantity(spawner.getQuantity() + 1);
+                ItemStack newHand = player.getItemInHand().clone();
+                newHand.setAmount(newHand.getAmount() - 1);
+                player.setItemInHand(newHand);
 
                 SpawnerLog log = new SpawnerLog("§eGeradores adicionados");
                 log.setLore(Arrays.asList(
@@ -126,33 +178,11 @@ public class SpawnerListener implements Listener {
                 ));
                 spawner.addLog(log);
 
-                return;
+                spawner.updateHologram();
             }
-
-            spawner.setQuantity(spawner.getQuantity() + 1);
-            spawner.updateHologram();
-            player.sendMessage("§aGerador antigo aumentado!");
-            return;
         }
 
-        Spawner spawner = new Spawner(blockLocation, type, player.getUniqueId());
-        if(player.isSneaking() && item.getAmount() > 1){
-            spawner.setQuantity(item.getAmount());
-            spawner.updateHologram();
-            player.setItemInHand(null);
-
-            SpawnerLog log = new SpawnerLog("§eGeradores adicionados");
-            log.setLore(Arrays.asList(
-                    "",
-                    "§7Usuário: §f" + player.getName(),
-                    "§7Adicionou: §f" + item.getAmount(),
-                    "§7Data: §f" + log.getDate()
-            ));
-            spawner.addLog(log);
-            return;
-        }
-
-        player.sendMessage("§aNovo gerador colocado!");
+        player.sendMessage(plugin.getMessages().getString("GeneratorPlaced").replace("&","§").replace("%quantity_generators%", spawner.getQuantity()+"").replace("%spawner_type%", spawner.getEntityName()));
     }
 
     @EventHandler
@@ -161,60 +191,65 @@ public class SpawnerListener implements Listener {
         Block block = e.getBlock();
         if(block.getType() != Material.MOB_SPAWNER) return;
 
-        if(plugin.getConfiguration().getBoolean("Generator.SilkTouch")) {
-            if (!player.getItemInHand().getType().toString().contains("PICKAXE")) {
-                player.sendMessage("§cUtilize uma picareta com Toque Suave para remover o gerador.");
-                return;
-            }
-
-            if (!player.getItemInHand().getEnchantments().containsKey(Enchantment.SILK_TOUCH)) {
-                player.sendMessage("§cUtilize uma picareta com Toque Suave para remover o gerador.");
-                return;
-            }
-        }
-
         Location blockLocation = block.getLocation();
 
         CreatureSpawner cs = (CreatureSpawner) block.getState();
         EntityType type = cs.getSpawnedType();
 
         if(RaphaSpawners.getSpawners().containsKey(blockLocation)){
-            Spawner spawner = RaphaSpawners.getSpawners().get(blockLocation);
+
             e.setCancelled(true);
+
+            if(plugin.getConfiguration().getBoolean("Generator.SilkTouch")) {
+                if (!player.getItemInHand().getType().toString().contains("PICKAXE")) {
+                    player.sendMessage(plugin.getMessages().getString("GeneratorSilkTouch").replace("&","§"));
+                    return;
+                }
+
+                if (!player.getItemInHand().getEnchantments().containsKey(Enchantment.SILK_TOUCH)) {
+                    player.sendMessage(plugin.getMessages().getString("GeneratorSilkTouch").replace("&","§"));
+                    return;
+                }
+            }
+
+            Spawner spawner = RaphaSpawners.getSpawners().get(blockLocation);
 
             if(!spawner.getOwner().equals(player.getUniqueId()))
                 if(spawner.getMembers().containsKey(player.getUniqueId())) {
                     if (!spawner.memberHasPermission(PermissionType.REMOVE_GENERATOR, player.getUniqueId())) {
-                        player.sendMessage("§cVocê não tem permissão para '§7" + PermissionType.REMOVE_GENERATOR.getName() + "§c' nesse gerador.");
+                        player.sendMessage(plugin.getMessages().getString("Errors.NoHaveThePermission").replace("&","§").replace("%permission%", PermissionType.REMOVE_GENERATOR.getName()));
                         return;
                     }
                 }else{
-                    player.sendMessage("§cVocê não tem permissão nesse gerador.");
+                    player.sendMessage(plugin.getMessages().getString("Errors.NoPermission").replace("&","§"));
                     return;
                 }
 
             if(!RaphaSpawners.getPlugin().getSQL().deleteSpawner(blockLocation)){
-                player.sendMessage("§cOcorreu um erro ao remover seu spawner");
+                player.sendMessage(plugin.getMessages().getString("Errors.RemoveGenerator").replace("&","§"));
                 return;
             }
 
-            block.getState().setType(Material.AIR);
-            block.setType(Material.AIR);
-            spawner.deleteHologram();
+            ItemStack item = SpawnerUtils.getSpawner(type);
 
-            ItemStack item = new ItemBuilder(Material.MOB_SPAWNER, spawner.getQuantity())
-                    .setName("§eGerador de Monstros")
-                    .setLore(
-                            "§7Tipo: §f" + spawner.getEntityName()
-                    ).toItemStack();
-            item = NBTAPI.setNBTData(item, "spawnertype", type.name().toUpperCase());
+            if(spawner.getQuantity() == 1){
 
-            player.sendMessage("§aQuebrou spawner de §fx" + spawner.getQuantity() + " " + spawner.getEntityName());
-            RaphaSpawners.getSpawners().remove(blockLocation);
-            accessInventory.remove(player.getUniqueId(), spawner);
-            addMember.remove(player.getUniqueId(), spawner);
-            removeGenerator.remove(player.getUniqueId(), spawner);
-            addGenerator.remove(player.getUniqueId(), spawner);
+                spawner.deleteHologram();
+                player.sendMessage(plugin.getMessages().getString("GeneratorBreak").replace("&","§").replace("%quantity_generators%", spawner.getQuantity()+"").replace("%spawner_type%", spawner.getEntityName()));
+                blockLocation.getWorld().dropItemNaturally(blockLocation, item);
+
+                block.setType(Material.AIR);
+                RaphaSpawners.getSpawners().remove(blockLocation);
+                accessInventory.remove(player.getUniqueId(), spawner);
+                addMember.remove(player.getUniqueId(), spawner);
+                removeGenerator.remove(player.getUniqueId(), spawner);
+                addGenerator.remove(player.getUniqueId(), spawner);
+                return;
+            }
+
+            spawner.setQuantity(spawner.getQuantity() - 1);
+            spawner.updateHologram();
+            player.sendMessage(plugin.getMessages().getString("GeneratorBreak").replace("&","§").replace("%quantity_generators%", spawner.getQuantity()+"").replace("%spawner_type%", spawner.getEntityName()));
             blockLocation.getWorld().dropItemNaturally(blockLocation, item);
         }
     }
@@ -236,16 +271,17 @@ public class SpawnerListener implements Listener {
             if(!spawner.getOwner().equals(player.getUniqueId()))
                 if(spawner.getMembers().containsKey(player.getUniqueId())) {
                     if (!spawner.memberHasPermission(PermissionType.ACCESS_PANEL_GENERATOR, player.getUniqueId())) {
-                        player.sendMessage("§cVocê não tem permissão para '§7" + PermissionType.ACCESS_PANEL_GENERATOR.getName() + "§c' nesse gerador.");
+                        player.sendMessage(plugin.getMessages().getString("Errors.NoHaveThePermission").replace("&","§").replace("%permission%", PermissionType.ACCESS_PANEL_GENERATOR.getName()));
                         player.closeInventory();
                         return;
                     }
                 }else{
-                    player.sendMessage("§cVocê não tem permissão nesse gerador.");
+                    player.sendMessage(plugin.getMessages().getString("Errors.NoPermission").replace("&","§"));
                     player.closeInventory();
                     return;
                 }
 
+            e.setCancelled(true);
 
             accessInventory.put(player.getUniqueId(), spawner);
             RaphaSpawners.getPlugin().getManager().openPanel(player, spawner);
@@ -256,7 +292,7 @@ public class SpawnerListener implements Listener {
     public void onClickPlayerPermission(InventoryClickEvent e) {
         Inventory inventory = e.getClickedInventory();
         if (inventory == null) return;
-        if (!e.getView().getTitle().startsWith("Permissões de")) return;
+        if (!e.getView().getTitle().startsWith(plugin.getConfigMenu().getString("PermissionsMember.Title").replace("%member%", ""))) return;
 
         e.setCancelled(true);
 
@@ -280,7 +316,7 @@ public class SpawnerListener implements Listener {
             final boolean hasPermission = Boolean.parseBoolean(NBTAPI.getTag(item, "hasPermission"));
             final int permissionID = Integer.parseInt(NBTAPI.getTag(item, "permissionID"));
             final UUID uuidTarget = UUID.fromString(NBTAPI.getTag(item, "permissionUUID"));
-            Optional<PermissionType> permission = Arrays.stream(PermissionType.values()).filter($ -> $.getSlot() == permissionID).findAny();
+            Optional<PermissionType> permission = Arrays.stream(PermissionType.values()).filter($ -> $.getID() == permissionID).findAny();
             if(!permission.isPresent()) return;
 
             if (hasPermission) {
@@ -309,7 +345,7 @@ public class SpawnerListener implements Listener {
                 ));
                 spawner.addLog(log);
             }
-            RaphaSpawners.getPlugin().getManager().setPermissionPanel(player, Bukkit.getOfflinePlayer(uuidTarget), spawner, inventory);
+            RaphaSpawners.getPlugin().getManager().setPermissionPanel(Bukkit.getOfflinePlayer(uuidTarget), spawner, inventory);
         }
     }
 
@@ -317,7 +353,7 @@ public class SpawnerListener implements Listener {
     public void onClickPermissionInventory(InventoryClickEvent e){
         Inventory inventory = e.getClickedInventory();
         if(inventory == null) return;
-        if(!e.getView().getTitle().equals("Permissões do Spawner")) return;
+        if(!e.getView().getTitle().equals(plugin.getConfigMenu().getString("Permissions.Title"))) return;
 
         e.setCancelled(true);
 
@@ -332,25 +368,32 @@ public class SpawnerListener implements Listener {
         Spawner spawner = accessInventory.get(player.getUniqueId());
         String nameItem = item.getItemMeta().getDisplayName();
 
-        if(nameItem.contains("Adicionar Membro")){
+        if(nameItem.contains(plugin.getConfigMenu().getString("Permissions.ItemStack.AddMember.Name").replace("&","§"))){
             if(!spawner.getOwner().equals(player.getUniqueId()))
                 if(spawner.getMembers().containsKey(player.getUniqueId())) {
                     if (!spawner.memberHasPermission(PermissionType.ADD_MEMBER, player.getUniqueId())) {
-                        player.sendMessage("§cVocê não tem permissão para '§7" + PermissionType.ADD_MEMBER.getName() + "§c' nesse gerador.");
+                        player.sendMessage(plugin.getMessages().getString("Errors.NoHaveThePermission").replace("&","§").replace("&","§").replace("%permission%", PermissionType.ADD_MEMBER.getName()));
                         player.closeInventory();
                         return;
                     }
                 }else{
-                    player.sendMessage("§cVocê não tem permissão nesse gerador.");
+                    player.sendMessage(plugin.getMessages().getString("Errors.NoPermission").replace("&","§"));
                     player.closeInventory();
                     return;
                 }
 
+            int limitMembers = plugin.getConfiguration().getInt("Generator.LimitMembers");
+
+            if(spawner.getMembers().size() >= limitMembers){
+                player.sendMessage(plugin.getMessages().getString("Errors.MaxMembers").replace("%max_members%", limitMembers+"").replace("&","§"));
+                player.closeInventory();
+                return;
+            }
+
             addMember.put(player.getUniqueId(), spawner);
-            player.sendMessage("");
-            player.sendMessage("§aQual jogador deseja adicionar?");
-            player.sendMessage("§7Digite o nome ou §c'cancelar'§7.");
-            player.sendMessage("");
+            for (String s : plugin.getMessages().getStringList("Prompts.AddMember")) {
+                player.sendMessage(s.replace("&","§"));
+            }
             player.closeInventory();
             return;
         }
@@ -374,7 +417,7 @@ public class SpawnerListener implements Listener {
             }
             if(e.getClick().isLeftClick()){
                 spawner.getMembers().remove(target.getUniqueId());
-                player.sendMessage("§aVocê removeu do Gerador o membro '§f" + target.getName() + "§a'.");
+                player.sendMessage(plugin.getMessages().getString("Success.PlayerRemoveMember").replace("&","§").replace("%member%", target.getName()));
                 e.setCurrentItem(null);
             }
 
@@ -382,10 +425,37 @@ public class SpawnerListener implements Listener {
     }
 
     @EventHandler
+    public void onClickTOp(InventoryClickEvent e) {
+        Inventory inventory = e.getClickedInventory();
+        if (inventory == null) return;
+        if(!e.getView().getTitle().equals(plugin.getConfigMenu().getString("TopGenerator.Title"))) return;
+
+        e.setCancelled(true);
+
+        ItemStack item = e.getCurrentItem();
+        if (item == null) return;
+        if (!item.hasItemMeta()) return;
+        if (!item.getItemMeta().hasDisplayName()) return;
+
+        e.setCancelled(true);
+
+
+        if(item.getItemMeta().getDisplayName().contains("Voltar")){
+            Player player = (Player) e.getWhoClicked();
+            if(!accessInventory.containsKey(player.getUniqueId())) return;
+
+            Spawner spawner = accessInventory.get(player.getUniqueId());
+            RaphaSpawners.getPlugin().getManager().openPanel(player, spawner);
+            accessInventory.put(player.getUniqueId(), spawner);
+            return;
+        }
+    }
+
+    @EventHandler
     public void onClickDefaultInventory(InventoryClickEvent e){
         Inventory inventory = e.getClickedInventory();
         if(inventory == null) return;
-        if(!e.getView().getTitle().equals("Gerenciar Spawner")) return;
+        if(!e.getView().getTitle().equals(plugin.getConfigMenu().getString("Default.Title"))) return;
 
         e.setCancelled(true);
 
@@ -399,27 +469,27 @@ public class SpawnerListener implements Listener {
 
         ClickType click = e.getClick();
         Spawner spawner = accessInventory.get(player.getUniqueId());
-        String nameItem = item.getItemMeta().getDisplayName();
+        String action = NBTAPI.getTag(item, "action");
 
-        switch(nameItem){
-            case "§eStatus do Gerador":
+        switch(action){
+            case "StatusGenerator":
                 if(!spawner.getOwner().equals(player.getUniqueId()))
                     if(spawner.getMembers().containsKey(player.getUniqueId())) {
                         if (!spawner.memberHasPermission(PermissionType.TURN_GENERATOR, player.getUniqueId())) {
-                            player.sendMessage("§cVocê não tem permissão para '§7" + PermissionType.TURN_GENERATOR.getName() + "§c' nesse gerador.");
+                            player.sendMessage(plugin.getMessages().getString("Errors.NoHaveThePermission").replace("&","§").replace("%permission%", PermissionType.TURN_GENERATOR.getName()));
                             player.closeInventory();
                             return;
                         }
                     }else{
-                        player.sendMessage("§cVocê não tem permissão nesse gerador.");
+                        player.sendMessage(plugin.getMessages().getString("Errors.NoPermission").replace("&","§"));
                         player.closeInventory();
                         return;
                     }
 
                 spawner.setStatus(!spawner.getStatus());
-                RaphaSpawners.getPlugin().getManager().setItemPanel(player, inventory, spawner);
+                RaphaSpawners.getPlugin().getManager().setItemPanel(inventory, spawner);
                 spawner.updateHologram();
-                player.sendMessage("§aO gerador foi " + (spawner.getStatus() ? "ativado" : "desativado"));
+                player.sendMessage(plugin.getMessages().getString("Actions.ChangeStatus").replace("&","§").replace("%spawner_status%", (spawner.getStatus() ? "§aAtivado" : "§cDesativado")));
 
                 SpawnerLog log = new SpawnerLog("§eAlterou status do Gerador");
                 log.setLore(Arrays.asList(
@@ -431,54 +501,55 @@ public class SpawnerListener implements Listener {
                 spawner.addLog(log);
 
                 break;
-            case "§eArmazenar geradores":
+            case "StoreGenerator":
                 if(!spawner.getOwner().equals(player.getUniqueId()))
                     if(spawner.getMembers().containsKey(player.getUniqueId())) {
                         if (!spawner.memberHasPermission(PermissionType.ADD_MOBSPAWNERS, player.getUniqueId())) {
-                            player.sendMessage("§cVocê não tem permissão para '§7" + PermissionType.ADD_MOBSPAWNERS.getName() + "§c' nesse gerador.");
+                            player.sendMessage(plugin.getMessages().getString("Errors.NoHaveThePermission").replace("&","§").replace("%permission%", PermissionType.ADD_MOBSPAWNERS.getName()));
                             player.closeInventory();
                             return;
                         }
                     }else{
-                        player.sendMessage("§cVocê não tem permissão nesse gerador.");
+                        player.sendMessage(plugin.getMessages().getString("Errors.NoPermission").replace("&","§"));
                         player.closeInventory();
                         return;
                     }
 
                 if(click.isLeftClick()){
-                    player.sendMessage("");
-                    player.sendMessage("§aQual a quantidade de geradores que deseja armazenar?");
-                    player.sendMessage("§7Digite no chat o número para adicionar ou digite '§ccancelar§7'.");
-                    player.sendMessage("");
+                    for (String s : plugin.getMessages().getStringList("Prompts.AddGenerators")) {
+                        player.sendMessage(s.replace("&","§"));
+                    }
                     addGenerator.put(player.getUniqueId(), spawner);
                 }else{
-                    player.sendMessage("");
-                    player.sendMessage("§aQual a quantidade de geradores que deseja retirar?");
-                    player.sendMessage("§7Digite no chat o número para retirar ou digite '§ccancelar§7'.");
-                    player.sendMessage("");
+                    for (String s : plugin.getMessages().getStringList("Prompts.RemoveGenerators")) {
+                        player.sendMessage(s.replace("&","§"));
+                    }
                     removeGenerator.put(player.getUniqueId(), spawner);
                 }
                 player.closeInventory();
                 break;
-            case "§ePermissões do Spawner":
+            case "Permissions":
                 if(!spawner.getOwner().equals(player.getUniqueId()))
                     if(spawner.getMembers().containsKey(player.getUniqueId())) {
                         if (!spawner.memberHasPermission(PermissionType.MANAGER_PERMISSION, player.getUniqueId())) {
-                            player.sendMessage("§cVocê não tem permissão para '§7" + PermissionType.MANAGER_PERMISSION.getName() + "§c' nesse gerador.");
+                            player.sendMessage(plugin.getMessages().getString("Errors.NoHaveThePermission").replace("&","§").replace("%permission%", PermissionType.MANAGER_PERMISSION.getName()));
                             player.closeInventory();
                             return;
                         }
                     }else{
-                        player.sendMessage("§cVocê não tem permissão nesse gerador.");
-                        player.closeInventory();
+                        player.sendMessage(plugin.getMessages().getString("Errors.NoPermission").replace("&","§"));
                         return;
                     }
 
                 RaphaSpawners.getPlugin().getManager().openMenuPermissions(player, spawner);
                 accessInventory.put(player.getUniqueId(), spawner);
                 break;
-            case "§eRegistros de alterações":
+            case "Logs":
                 RaphaSpawners.getPlugin().getManager().openLogsPanel(player, spawner);
+                accessInventory.put(player.getUniqueId(), spawner);
+                break;
+            case "TopGenerator":
+                RaphaSpawners.getPlugin().getManager().openTopGeneratorPanel(player, spawner);
                 accessInventory.put(player.getUniqueId(), spawner);
                 break;
         }
@@ -493,20 +564,20 @@ public class SpawnerListener implements Listener {
             e.setCancelled(true);
             if (message.equalsIgnoreCase("cancelar")) {
                 addGenerator.remove(player.getUniqueId());
-                player.sendMessage("§cAção cancelada.");
+                player.sendMessage(plugin.getMessages().getString("Actions.ActionCanceled").replace("&","§"));
                 return;
             }
             if (!StringUtils.isNumeric(message)) {
-                player.sendMessage("§cDigite um número válido ou cancele.");
+                player.sendMessage(plugin.getMessages().getString("Errors.NumberInvalid").replace("&","§"));
                 return;
             }
             ItemStack item = player.getItemInHand();
             if(item == null){
-                player.sendMessage("§cSegure os spawners em sua mão.");
+                player.sendMessage(plugin.getMessages().getString("Errors.GeneratorInHand").replace("&","§"));
                 return;
             }
             if(item.getType() != Material.MOB_SPAWNER){
-                player.sendMessage("§cSegure os spawners em sua mão.");
+                player.sendMessage(plugin.getMessages().getString("Errors.GeneratorInHand").replace("&","§"));
                 return;
             }
 
@@ -514,12 +585,12 @@ public class SpawnerListener implements Listener {
             try {
                 int amount = Integer.parseInt(message);
                 if(amount > item.getAmount()){
-                    player.sendMessage("§cQuantidade de spawners na mão insuficiente");
+                    player.sendMessage(plugin.getMessages().getString("Errors.NoSuficientGenerators").replace("&","§"));
                     return;
                 }
 
                 spawner.setQuantity(spawner.getQuantity() + amount);
-                player.sendMessage("§aForam armazenados §f" + amount + "§a geradores.");
+                player.sendMessage(plugin.getMessages().getString("Success.StoreGenerators").replace("%quantity_generators%", amount+"").replace("&","§"));
                 item.setAmount(item.getAmount() - amount);
                 player.setItemInHand(item);
                 addGenerator.remove(player.getUniqueId());
@@ -535,7 +606,7 @@ public class SpawnerListener implements Listener {
 
                 Bukkit.getScheduler().runTask(RaphaSpawners.getPlugin(), spawner::updateHologram);
             }catch (NumberFormatException error){
-                player.sendMessage("§cDigite um número válido ou cancele.");
+                player.sendMessage(plugin.getMessages().getString("Errors.NumberInvalid").replace("&","§"));
             }
         }
 
@@ -543,11 +614,11 @@ public class SpawnerListener implements Listener {
             e.setCancelled(true);
             if (message.equalsIgnoreCase("cancelar")) {
                 removeGenerator.remove(player.getUniqueId());
-                player.sendMessage("§cAção cancelada.");
+                player.sendMessage(plugin.getMessages().getString("Actions.ActionCanceled").replace("&","§"));
                 return;
             }
             if (!StringUtils.isNumeric(message)) {
-                player.sendMessage("§cDigite um número válido ou cancele.");
+                player.sendMessage(plugin.getMessages().getString("Errors.NumberInvalid").replace("&","§"));
                 return;
             }
 
@@ -556,28 +627,22 @@ public class SpawnerListener implements Listener {
 
                 int amount = Integer.parseInt(message);
                 if(amount == spawner.getQuantity()){
-                    player.sendMessage("§cVocê não pode remover todos os spawners.");
+                    player.sendMessage(plugin.getMessages().getString("Errors.RemoveAllGenerators").replace("&","§"));
                     return;
                 }
 
                 if(amount > spawner.getQuantity()){
-                    player.sendMessage("§cNão há " + amount + " spawners para retirar.");
+                    player.sendMessage(plugin.getMessages().getString("Errors.NoTakeSuficientGenerators").replace("%quantity_generators%", amount+"").replace("&","§"));
                     return;
                 }
 
-                for(int i = 0;i <= amount;i++){
-                    ItemStack item = new ItemBuilder(Material.MOB_SPAWNER)
-                            .setName("§eGerador de Monstros")
-                            .setLore(
-                                    "§7Tipo: §f" + spawner.getEntityName()
-                            ).toItemStack();
-                    item = NBTAPI.setNBTData(item, "spawnertype", spawner.getType().name().toUpperCase());
-
+                for(int i = 0;i < amount;i++){
+                    ItemStack item = SpawnerUtils.getSpawner(spawner.getType());
                     player.getInventory().addItem(item);
                 }
 
                 spawner.setQuantity(spawner.getQuantity() - amount);
-                player.sendMessage("§aForam retirados §f" + amount + "§a geradores para você.");
+                player.sendMessage(plugin.getMessages().getString("Success.TakeGenerators").replace("&","§").replace("%quantity_generators%", amount+""));
                 removeGenerator.remove(player.getUniqueId());
 
                 SpawnerLog log = new SpawnerLog("§eGeradores retirados");
@@ -591,7 +656,7 @@ public class SpawnerListener implements Listener {
 
                 Bukkit.getScheduler().runTask(RaphaSpawners.getPlugin(), spawner::updateHologram);
             }catch (NumberFormatException error){
-                player.sendMessage("§cDigite um número válido ou cancele.");
+                player.sendMessage(plugin.getMessages().getString("Errors.NumberInvalid").replace("&","§"));
             }
         }
 
@@ -599,33 +664,33 @@ public class SpawnerListener implements Listener {
             e.setCancelled(true);
             if (message.equalsIgnoreCase("cancelar")) {
                 addMember.remove(player.getUniqueId());
-                player.sendMessage("§cAção cancelada.");
+                player.sendMessage(plugin.getMessages().getString("Actions.ActionCanceled").replace("&","§"));
                 return;
             }
             OfflinePlayer target = Bukkit.getOfflinePlayer(message);
             if(target == null){
-                player.sendMessage("§cJogador não encontrado");
+                player.sendMessage(plugin.getMessages().getString("Errors.PlayerNotFound").replace("&","§"));
                 return;
             }
 
             if(!target.hasPlayedBefore()){
-                player.sendMessage("§cJogador não encontrado");
+                player.sendMessage(plugin.getMessages().getString("Errors.PlayerNotFound").replace("&","§"));
                 return;
             }
 
             if(target.getUniqueId().equals(player.getUniqueId())){
-                player.sendMessage("§cVocê não pode adicionar si mesmo como um membro.");
+                player.sendMessage(plugin.getMessages().getString("Errors.NoAddMemberOwn").replace("&","§"));
                 return;
             }
 
             Spawner spawner = addMember.get(player.getUniqueId());
             if(target.getUniqueId().equals(spawner.getOwner())){
-                player.sendMessage("§cVocê não pode adicionar o proprietário como um membro.");
+                player.sendMessage(plugin.getMessages().getString("Errors.NoAddOwnerMember").replace("&","§"));
                 return;
             }
 
             if(spawner.getMembers().containsKey(target.getUniqueId())){
-                player.sendMessage("§cEsse jogador já está adicionado aos membros desse gerador.");
+                player.sendMessage(plugin.getMessages().getString("Errors.PlayerWasMember").replace("&","§"));
                 return;
             }
 
@@ -634,7 +699,7 @@ public class SpawnerListener implements Listener {
                 add(PermissionType.TURN_GENERATOR);
             }});
 
-            player.sendMessage("§aJogador §f" + target.getName() + " §aadicionado.");
+            player.sendMessage(plugin.getMessages().getString("Success.PlayerAddedMember").replace("&","§").replace("%member%", target.getName()));
 
             SpawnerLog log = new SpawnerLog("§eMembro adicionado");
             log.setLore(Arrays.asList(
@@ -676,7 +741,7 @@ public class SpawnerListener implements Listener {
             spawner.clearLogs();
             RaphaSpawners.getPlugin().getManager().openPanel(player, spawner);
             accessInventory.put(player.getUniqueId(), spawner);
-            player.sendMessage("§aLogs foram limpadas com sucesso.");
+            player.sendMessage(plugin.getMessages().getString("Success.ClearLogs").replace("&","§"));
         }
     }
 
