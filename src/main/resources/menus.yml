@@ -1,0 +1,163 @@
+Permissions:
+  SizeRow: 6
+  Title: "Permissões do Spawner"
+  MaterialWithPermission: SLIME_BALL
+  MaterialNotPermission: BARRIER
+  Slots:
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 28
+    - 29
+    - 30
+    - 31
+    - 32
+    - 33
+    - 34
+  ItemStack:
+    Member:
+      Name: "&e%member%"
+      Lore:
+        - "&7Clique &fesquerdo &7para remover esse jogador."
+        - "&7Clique &fdireito &7para gerenciar as permissões deste jogador."
+    AddMember:
+      Material: NETHER_STAR
+      Name: "&aAdicionar Membro"
+      Lore:
+        - "&7Clique para adicionar membros ao seu gerador."
+PermissionsMember:
+  SizeRow: 6
+  Title: "Permissões de %member%"
+  MaterialWithPermission: SLIME_BALL
+  MaterialNotPermission: BARRIER
+  PermissionsType:
+    Lore:
+      - "&7Clique para alternar entre as permissões desse jogador"
+      - "&7Status: &f%permission_status%"
+    ADD_MOBSPAWNERS:
+      Name: "&eAdicionar Geradores"
+      Slot: 10
+    REMOVE_MOBSPAWNERS:
+      Name: "&eRetirar Geradores"
+      Slot: 19
+    REMOVE_GENERATOR:
+      Name: "&eRemover Gerador"
+      Slot: 12
+    TURN_GENERATOR:
+      Name: "&eAlterar status do Gerador"
+      Slot: 21
+    ADD_MEMBER:
+      Name: "&eAdicionar membros"
+      Slot: 14
+    REMOVE_MEMBER:
+      Name: "&eRemover membros"
+      Slot: 23
+    MANAGER_PERMISSION:
+      Name: "&eGerenciar permissões"
+      Slot: 16
+    ACCESS_PANEL_GENERATOR:
+      Name: "&eAcessar painel principal"
+      Slot: 25
+Logs:
+  SizeRow: 6
+  Title: "Logs"
+
+TopGenerator:
+  SizeRow: 6
+  Title: "Top Geradores"
+  Slots:
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 29
+    - 30
+    - 31
+    - 32
+    - 33
+  BackItemSlot: 49
+  NumberOfTOPS: 15
+  ItemStack:
+    Name: "&e%player%"
+    Lore:
+      - "&7Geradores: &f%quantity_generators%"
+      - "&7Custos: &a$ %price_generators%"
+
+Default:
+  SizeRow: 3
+  Title: "Gerenciar Spawner"
+  Items:
+    Permissions:
+      Material: NETHER_STAR
+      Slot: 10
+      Title: "&ePermissões do Spawner"
+      Lore:
+        - ""
+        - "&7Clique para gerenciar as permissões do gerador"
+    Owner:
+      Material: SKULL_ITEM
+      Slot: 11
+      Title: "&eProprietário"
+      SkullNick: "%owner%"
+      Lore:
+        - ""
+        - "&7Dono: &f%owner%"
+        - "&7Status: &f%status%"
+        - ""
+        - "&7O jogador que colocar o gerador"
+        - "&7torna-se o principal proprietário."
+    Logs:
+      Material: BOOK
+      Slot: 13
+      Title: "&eRegistros de alterações"
+      Lore:
+        - ""
+        - "&7Clique para abrir suas logs"
+    StoreGenerator:
+      Material: MINECART
+      Glow: true
+      Data: 0
+      Slot: 14
+      Title: "&eArmazenar geradores"
+      Lore:
+        - ""
+        - "&7Tipo: &f%spawner_type%"
+        - "&7Quantidade: &f%spawner_quantity%"
+        - ""
+        - "&7Clique &fesquerdo &7para adicionar Geradores"
+        - "&7Clique &fdireito &7para remover Geradores"
+    StatusGenerator:
+      Material: MOB_SPAWNER
+      Slot: 15
+      Title: "&eStatus do Gerador"
+      Lore:
+        - ""
+        - "&7Status: &f%spawner_status%"
+        - "&7Clique para alternar entre &fativado &7e &fdesativado&7."
+    TopGenerator:
+      Material: NAME_TAG
+      Slot: 16
+      Title: "&eTop Geradores"
+      Lore:
+        - ""
+        - "&7Clique para ver os jogadores com"
+        - "&7mais geradores do servidor."
+
+

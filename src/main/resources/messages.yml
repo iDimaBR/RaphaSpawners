@@ -1,0 +1,51 @@
+WorldBlocked: "&cOs geradores estão bloqueados neste mundo."
+GeneratorNotFound: "&cGerador não encontrado."
+GeneratorPlaced: "&aVocê colocou &fx%quantity_generators% &ageradores de &f%spawner_type%&a."
+GeneratorBreak: "&aVocê quebrou &fx%quantity_generators% &ageradores de &f%spawner_type%&a."
+GeneratorSilkTouch: "&cUtilize uma picareta com &fToque Suave &cpara poder remover seu gerador."
+
+Actions:
+  RemoveMember: "&aVocê removeu o membro '&f%memberName% &ado gerador."
+  ChangeStatus: "&aO gerador foi %spawner_status%&a."
+  ActionCanceled: "&cA ação foi cancelada."
+
+Prompts:
+  AddMember:
+    - ""
+    - "&aQual jogador deseja adicionar?"
+    - "&7Digite o nome dele ou &c'cancelar'&7."
+    - ""
+  AddGenerators:
+    - ""
+    - "&aQual a quantidade de geradores que deseja armazenar?"
+    - "&7Digite no chat o número para adicionar ou '&ccancelar&7'."
+    - ""
+  RemoveGenerators:
+    - ""
+    - "&aQual a quantidade de geradores que deseja retirar?"
+    - "&7Digite no chat o número para adicionar ou '&ccancelar&7'."
+    - ""
+
+Errors:
+  MaxMembers: "&cVocê atingiu o máximo de membros possível. (%max_members%)"
+  NoPermissionTypeGenerator: "&cVocê não tem permissão para colocar geradores do tipo &7%spawner_type%&c."
+  RemoveGenerator: "&cOcorreu um erro ao remover seu gerador."
+  RemoveAllGenerators: "&cVocê não pode remover todos os geradores assim."
+  NumberInvalid: "&cDigite um número válido ou cancele."
+  GeneratorInHand: "&cSegure os geradores em suas maõs."
+  NoSuficientGenerators: "&cVocê não tem geradores suficientes em suas mãos."
+  NoTakeSuficientGenerators: "&cNão há &f%quantity_generators% &cgeradores para retirar."
+  PlayerNotFound: "&cEsse jogador não foi encontrado."
+  NoAddMemberOwn: "&cVocê não pode adicionar a si mesmo como um membro."
+  NoAddOwnerMember: "&cVocê não pode adicionar o proprietário como um membro."
+  PlayerWasMember: "&cEsse jogador já está adicionado como um dos membros deste gerador."
+  NoHaveThePermission: "&cVocê não tem a permissão &7'%permission%' &cpara fazer isso."
+  NoPermission: "&CVocê não tem permissão deste gerador."
+  LimitExcedeed: "&cO limite do seu gerador foi alcançado. (%limitstack%)"
+Success:
+  StoreGenerators: "&aForam armazenados &f%quantity_generators% &ageradores."
+  TakeGenerators: "&aForam retirados &f%quantity_generators% &ageradores."
+  PlayerAddedMember: "&aJogador &f%member% &aadicionado com sucesso."
+  PlayerRemoveMember: "&aJogador &f%member% &aremovido com sucesso."
+  ClearLogs: "&aOs registros de alterações foram limpados."
+

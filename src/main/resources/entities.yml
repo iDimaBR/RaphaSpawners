@@ -1,0 +1,51 @@
+CREEPER:
+  Price: 1200
+  Permission: 'spawner.use'
+  HeadURL: 'https://textures.minecraft.net/texture/ab5ba8ae0e263ce483e6564179fea977a0c084e22154fe555e5d2321fdbb7e03'
+  Drops:
+    Item-1:
+      Material: DIRT
+      Data: 0
+      Glow: false
+      Name: "&fTeste"
+      Lore:
+        - "&7Apenas testando xD"
+PIG:
+  Price: 1200
+  Permission: 'spawner.use'
+  HeadURL: 'https://textures.minecraft.net/texture/ab5ba8ae0e263ce483e6564179fea977a0c084e22154fe555e5d2321fdbb7e03'
+SHEEP:
+  Price: 1200
+  Permission: 'spawner.use'
+  HeadURL: 'https://textures.minecraft.net/texture/ab5ba8ae0e263ce483e6564179fea977a0c084e22154fe555e5d2321fdbb7e03'
+COW:
+  Price: 1200
+  Permission: 'spawner.use'
+  HeadURL: 'https://textures.minecraft.net/texture/ab5ba8ae0e263ce483e6564179fea977a0c084e22154fe555e5d2321fdbb7e03'
+CHICKEN:
+  Price: 1200
+  Permission: 'spawner.use'
+  HeadURL: 'https://textures.minecraft.net/texture/ab5ba8ae0e263ce483e6564179fea977a0c084e22154fe555e5d2321fdbb7e03'
+  Drops:
+    Item-1:
+      Material: DIRT
+      Amount: 3
+      Data: 0
+      Looting: true
+      Glow: false
+      ChanceDrop: 100
+      Name: "&fTeste"
+      Lore:
+        - "&7Apenas testando xD"
+  Rewards:
+    Chance: 5
+    Commands:
+     - "give %player% dirt"
+SQUID:
+  Price: 1200
+  Permission: 'spawner.use'
+  HeadURL: 'https://textures.minecraft.net/texture/ab5ba8ae0e263ce483e6564179fea977a0c084e22154fe555e5d2321fdbb7e03'
+WOLF:
+  Price: 1200
+  Permission: 'spawner.use'
+  HeadURL: 'https://textures.minecraft.net/texture/ab5ba8ae0e263ce483e6564179fea977a0c084e22154fe555e5d2321fdbb7e03'
