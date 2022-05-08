@@ -41,6 +41,7 @@ PermissionsMember:
   Title: "Permissões de %member%"
   MaterialWithPermission: SLIME_BALL
   MaterialNotPermission: BARRIER
+  BackSlot: 49
   PermissionsType:
     Lore:
       - "&7Clique para alternar entre as permissões desse jogador"

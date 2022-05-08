@@ -210,7 +210,9 @@ public class SpawnerManager {
             inventory.setItem(slot, item);
         }
 
-        inventory.setItem(49, new ItemBuilder(Material.ARROW).setName("§cVoltar").toItemStack());
+
+        int backSlot = plugin.getConfigMenu().getInt("PermissionsMember.BackSlot");
+        inventory.setItem(backSlot, new ItemBuilder(Material.ARROW).setName("§cVoltar").toItemStack());
     }
 
     // logs

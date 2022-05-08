@@ -28,6 +28,8 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+
 import java.util.*;
 
 public class SpawnerListener implements Listener {
@@ -515,15 +517,28 @@ public class SpawnerListener implements Listener {
                         return;
                     }
 
+                int limitStack = plugin.getConfiguration().getInt("Generator.LimitStack");
+
                 if(click.isLeftClick()){
+                    if(spawner.getQuantity() >= limitStack){
+                        player.sendMessage(plugin.getMessages().getString("Errors.LimitExcedeed")
+                                .replace("&","§")
+                                .replace("%limitstack%", limitStack+"")
+                        );
+                        return;
+                    }
+
                     for (String s : plugin.getMessages().getStringList("Prompts.AddGenerators")) {
                         player.sendMessage(s.replace("&","§"));
                     }
                     addGenerator.put(player.getUniqueId(), spawner);
+                    removeGenerator.remove(player.getUniqueId());
+                    return;
                 }else{
                     for (String s : plugin.getMessages().getStringList("Prompts.RemoveGenerators")) {
                         player.sendMessage(s.replace("&","§"));
                     }
+                    addGenerator.remove(player.getUniqueId());
                     removeGenerator.put(player.getUniqueId(), spawner);
                 }
                 player.closeInventory();
@@ -571,43 +586,54 @@ public class SpawnerListener implements Listener {
                 player.sendMessage(plugin.getMessages().getString("Errors.NumberInvalid").replace("&","§"));
                 return;
             }
-            ItemStack item = player.getItemInHand();
-            if(item == null){
-                player.sendMessage(plugin.getMessages().getString("Errors.GeneratorInHand").replace("&","§"));
+
+            int amount = 0;
+
+            try {
+                amount = Integer.parseInt(message);
+            }catch (NumberFormatException err){
+                player.sendMessage(plugin.getMessages().getString("Errors.NumberInvalid").replace("&","§"));
                 return;
             }
-            if(item.getType() != Material.MOB_SPAWNER){
-                player.sendMessage(plugin.getMessages().getString("Errors.GeneratorInHand").replace("&","§"));
+
+            if(amount == 0){
+                player.sendMessage(plugin.getMessages().getString("Errors.NumberInvalid").replace("&","§"));
+                return;
+            }
+
+            if(amount > 2304){
+                player.sendMessage(plugin.getMessages().getString("Errors.AmountMoreThanMax").replace("&","§"));
                 return;
             }
 
             Spawner spawner = addGenerator.get(player.getUniqueId());
-            try {
-                int amount = Integer.parseInt(message);
-                if(amount > item.getAmount()){
-                    player.sendMessage(plugin.getMessages().getString("Errors.NoSuficientGenerators").replace("&","§"));
-                    return;
-                }
+            int limitStack = plugin.getConfiguration().getInt("Generator.LimitStack");
 
-                spawner.setQuantity(spawner.getQuantity() + amount);
-                player.sendMessage(plugin.getMessages().getString("Success.StoreGenerators").replace("%quantity_generators%", amount+"").replace("&","§"));
-                item.setAmount(item.getAmount() - amount);
-                player.setItemInHand(item);
-                addGenerator.remove(player.getUniqueId());
-
-                SpawnerLog log = new SpawnerLog("§eGeradores adicionados");
-                log.setLore(Arrays.asList(
-                        "",
-                        "§7Usuário: §f" + player.getName(),
-                        "§7Adicionou: §f" + amount,
-                        "§7Data: §f" + log.getDate()
-                ));
-                spawner.addLog(log);
-
-                Bukkit.getScheduler().runTask(RaphaSpawners.getPlugin(), spawner::updateHologram);
-            }catch (NumberFormatException error){
-                player.sendMessage(plugin.getMessages().getString("Errors.NumberInvalid").replace("&","§"));
+            if(!hasAmountSpawner(player, amount, spawner.getType().name())){
+                player.sendMessage(plugin.getMessages().getString("Errors.NoSuficientGenerators").replace("&","§"));
+                return;
             }
+
+            if((spawner.getQuantity() + amount) > limitStack){
+                player.sendMessage(plugin.getMessages().getString("Errors.AddGeneratorsMoreThanLimit").replace("&","§").replace("%quantity_generators%", (limitStack - spawner.getQuantity())+"").replace("%limitstack%", limitStack+""));
+                return;
+            }
+
+            removeSpawnersFromPlayer(player, amount, spawner.getType().name());
+            spawner.setQuantity(spawner.getQuantity() + amount);
+            player.sendMessage(plugin.getMessages().getString("Success.StoreGenerators").replace("%quantity_generators%", amount+"").replace("&","§"));
+            addGenerator.remove(player.getUniqueId());
+
+            SpawnerLog log = new SpawnerLog("§eGeradores adicionados");
+            log.setLore(Arrays.asList(
+                    "",
+                    "§7Usuário: §f" + player.getName(),
+                    "§7Adicionou: §f" + amount,
+                    "§7Data: §f" + log.getDate()
+            ));
+            spawner.addLog(log);
+
+            Bukkit.getScheduler().runTask(RaphaSpawners.getPlugin(), spawner::updateHologram);
         }
 
         if(removeGenerator.containsKey(player.getUniqueId())) {
@@ -763,5 +789,57 @@ public class SpawnerListener implements Listener {
             }
         }
         return blocks;
+    }
+
+    public boolean removeSpawnersFromPlayer(Player player, int count, String type) {
+        Map<Integer, ? extends ItemStack> ammo = player.getInventory().all(Material.MOB_SPAWNER);
+
+        int found = 0;
+        for (ItemStack stack : ammo.values()) {
+            if(!NBTAPI.hasTag(stack, "spawnertype")) continue;
+            if(!NBTAPI.getTag(stack, "spawnertype").equals(type)) continue;
+            found += stack.getAmount();
+        }
+        if (count > found)
+            return false;
+
+        for (Integer index : ammo.keySet()) {
+            ItemStack stack = ammo.get(index);
+            if(!NBTAPI.hasTag(stack, "spawnertype")) continue;
+            if(!NBTAPI.getTag(stack, "spawnertype").equals(type)) continue;
+
+            int removed = Math.min(count, stack.getAmount());
+            count -= removed;
+
+            if (stack.getAmount() == removed)
+                player.getInventory().setItem(index, null);
+            else
+                stack.setAmount(stack.getAmount() - removed);
+
+            if (count <= 0)
+                break;
+        }
+
+        player.updateInventory();
+        return true;
+    }
+
+    public boolean hasAmountSpawner(Player player, int needed, String type){
+        PlayerInventory inventory = player.getInventory();
+        int amount = 0;
+        for (ItemStack itemStack : inventory) {
+            if(itemStack != null && itemStack.getType() == Material.MOB_SPAWNER) {
+                if(!NBTAPI.hasTag(itemStack, "spawnertype")) continue;
+                if(!NBTAPI.getTag(itemStack, "spawnertype").equals(type)) continue;
+                amount += itemStack.getAmount();
+            }
+        }
+
+        return amount >= needed;
+    }
+
+    public boolean hasAmountSpawner2(Player player, int needed){
+        return Arrays.stream(player.getInventory().getContents())
+                .map(is -> is != null && is.getType() == Material.MOB_SPAWNER).count() >= needed;
     }
 }

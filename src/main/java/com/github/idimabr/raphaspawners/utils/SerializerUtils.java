@@ -20,7 +20,11 @@ public class SerializerUtils {
         int y = location.getBlockY();
         int z = location.getBlockZ();
 
-        return world + ";" + x + ";" + y + ";" + z;
+        String locationString = world + ";" + x + ";" + y + ";" + z;
+
+        System.out.println(locationString);
+
+        return locationString;
     }
 
     public static Location convertLocation(String string){
@@ -31,7 +35,10 @@ public class SerializerUtils {
         int x = Integer.parseInt(values[1]);
         int y = Integer.parseInt(values[2]);
         int z = Integer.parseInt(values[3]);
-        return new Location(world, x, y, z);
+
+        Location location = new Location(world, x, y, z);
+        System.out.println("String to location: " + location.toString());
+        return location;
     }
 
     public static String convertMembers(HashMap<UUID, List<PermissionType>> members){

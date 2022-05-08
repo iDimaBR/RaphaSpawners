@@ -56,7 +56,7 @@ public final class RaphaSpawners extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new SpawnerListener(this), this);
         Bukkit.getPluginManager().registerEvents(new EntityListener(this), this);
         //Bukkit.getPluginManager().registerEvents(new ItemStackListener(), this);
-
+        manager.remasterEntities();
         new SpawnerDelayRunnable().runTaskTimer(this, 20L, 20L);
     }
 

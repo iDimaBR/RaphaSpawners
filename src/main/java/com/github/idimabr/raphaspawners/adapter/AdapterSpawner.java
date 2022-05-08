@@ -20,9 +20,15 @@ public class AdapterSpawner {
         Location location = SerializerUtils.convertLocation(rs.getString("location"));
         if(location == null) return null;
 
+        if(!location.getChunk().isLoaded())
+            location.getChunk().load(true);
+
         Block block = location.getBlock();
         if(block != null && block.getType() != Material.MOB_SPAWNER)
             location.getBlock().setType(Material.MOB_SPAWNER);
+
+        if(block == null)
+            location.getWorld().getBlockAt(location).setType(Material.MOB_SPAWNER);
 
         EntityType type = EntityType.valueOf(rs.getString("type").toUpperCase());
         UUID owner = UUID.fromString(rs.getString("owner"));

@@ -32,8 +32,7 @@ Errors:
   RemoveGenerator: "&cOcorreu um erro ao remover seu gerador."
   RemoveAllGenerators: "&cVocê não pode remover todos os geradores assim."
   NumberInvalid: "&cDigite um número válido ou cancele."
-  GeneratorInHand: "&cSegure os geradores em suas maõs."
-  NoSuficientGenerators: "&cVocê não tem geradores suficientes em suas mãos."
+  NoSuficientGenerators: "&cVocê não tem geradores suficientes."
   NoTakeSuficientGenerators: "&cNão há &f%quantity_generators% &cgeradores para retirar."
   PlayerNotFound: "&cEsse jogador não foi encontrado."
   NoAddMemberOwn: "&cVocê não pode adicionar a si mesmo como um membro."
@@ -42,6 +41,8 @@ Errors:
   NoHaveThePermission: "&cVocê não tem a permissão &7'%permission%' &cpara fazer isso."
   NoPermission: "&CVocê não tem permissão deste gerador."
   LimitExcedeed: "&cO limite do seu gerador foi alcançado. (%limitstack%)"
+  AmountMoreThanMax: "&cO máximo permitido para adicionar por vez é 2304 spawners (Inventário Full)"
+  AddGeneratorsMoreThanLimit: "&cVocê consegue apenas adicionar %quantity_generators%, pois ultrapassaria seu limite de %limitstack%."
 Success:
   StoreGenerators: "&aForam armazenados &f%quantity_generators% &ageradores."
   TakeGenerators: "&aForam retirados &f%quantity_generators% &ageradores."
