@@ -19,6 +19,7 @@ public class AdapterSpawner {
     public static Spawner toSpawner(ResultSet rs) throws SQLException {
         Location location = SerializerUtils.convertLocation(rs.getString("location"));
         if(location == null) return null;
+        if(location.getChunk() == null) return null;
 
         if(!location.getChunk().isLoaded())
             location.getChunk().load(true);

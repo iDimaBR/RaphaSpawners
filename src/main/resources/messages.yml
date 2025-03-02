@@ -12,18 +12,33 @@ Actions:
 Prompts:
   AddMember:
     - ""
-    - "&aQual jogador deseja adicionar?"
-    - "&7Digite o nome dele ou &c'cancelar'&7."
+    - ""
+    - ""
+    - ""
+    - ""
+    - ""
+    - ""
+    - "&aDigite o nome do jogador que deseja adicionar:"
     - ""
   AddGenerators:
     - ""
+    - ""
+    - ""
+    - ""
+    - ""
+    - ""
+    - ""
     - "&aQual a quantidade de geradores que deseja armazenar?"
-    - "&7Digite no chat o número para adicionar ou '&ccancelar&7'."
     - ""
   RemoveGenerators:
     - ""
+    - ""
+    - ""
+    - ""
+    - ""
+    - ""
+    - ""
     - "&aQual a quantidade de geradores que deseja retirar?"
-    - "&7Digite no chat o número para adicionar ou '&ccancelar&7'."
     - ""
 
 Errors:
@@ -43,6 +58,7 @@ Errors:
   LimitExcedeed: "&cO limite do seu gerador foi alcançado. (%limitstack%)"
   AmountMoreThanMax: "&cO máximo permitido para adicionar por vez é 2304 spawners (Inventário Full)"
   AddGeneratorsMoreThanLimit: "&cVocê consegue apenas adicionar %quantity_generators%, pois ultrapassaria seu limite de %limitstack%."
+  DontHaveSpaceInventory: "&cVocê não tem espaço livre no inventário suficiente para remover esses geradores."
 Success:
   StoreGenerators: "&aForam armazenados &f%quantity_generators% &ageradores."
   TakeGenerators: "&aForam retirados &f%quantity_generators% &ageradores."

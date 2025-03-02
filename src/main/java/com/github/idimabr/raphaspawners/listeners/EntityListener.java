@@ -25,9 +25,7 @@ import org.bukkit.event.entity.SpawnerSpawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class EntityListener implements Listener {
@@ -38,6 +36,8 @@ public class EntityListener implements Listener {
         this.plugin = plugin;
     }
 
+    private final Map<Location, Long> preventMultiple = new WeakHashMap<>();
+
     @EventHandler
     public void spawnMob(SpawnerSpawnEvent e) {
         CreatureSpawner cs = e.getSpawner();
@@ -45,6 +45,14 @@ public class EntityListener implements Listener {
         Location blockLocation = cs.getLocation();
 
         if(RaphaSpawners.getSpawners().containsKey(blockLocation)){
+
+            final Long lastSpawn = preventMultiple.get(blockLocation);
+            if (lastSpawn != null && lastSpawn + 250 > System.currentTimeMillis()) {
+                e.setCancelled(true);
+                return;
+            }
+            preventMultiple.put(blockLocation, System.currentTimeMillis());
+
             Spawner spawner = RaphaSpawners.getSpawners().get(blockLocation);
             if(!spawner.getStatus()){
                 e.setCancelled(true);
@@ -53,15 +61,17 @@ public class EntityListener implements Listener {
 
             if(plugin.getConfiguration().getStringList("WorldBlackList").contains(blockLocation.getWorld().getName())) return;
 
-
             Entity spawnedEntity = e.getEntity();
+
+            if(spawner.getType() != spawnedEntity.getType()) return;
+
             int radius = plugin.getConfiguration().getInt("Entities.DistanceStack");
             int limitStack = plugin.getConfiguration().getInt("Entities.LimitStack");
 
             Collection<Entity> entities = blockLocation.getWorld()
                     .getNearbyEntities(blockLocation, radius, radius, radius)
                     .stream()
-                    .filter(en -> en.hasMetadata("stacked") && en.getMetadata("stacked").size() != 0 && en.getMetadata("stacked").get(0).asInt() < limitStack)
+                    .filter(en -> en.getType() == spawner.getType() && en.hasMetadata("stacked") && en.getMetadata("stacked").size() != 0 && en.getMetadata("stacked").get(0).asInt() < limitStack)
                     .collect(Collectors.toList());
 
             SpawnerUtils.disableAI(e.getEntity());
@@ -78,18 +88,18 @@ public class EntityListener implements Listener {
 
                     int toSpawn = 0;
 
-                    if(plugin.getConfiguration().getBoolean("Generator.RandomValueSpawn")) {
-
-                        final int random = org.apache.commons.lang3.RandomUtils.nextInt(1, 20);
-                        final int random2 = org.apache.commons.lang3.RandomUtils.nextInt(1, 2);
-
-                        int value = (spawner.getQuantity() * random) / 100;
-                        if (random2 == 1) {
-                            toSpawn = amount + value;
-                        } else {
-                            toSpawn = amount - value;
-                        }
-                    }
+                    //if(plugin.getConfiguration().getBoolean("Generator.RandomValueSpawn")) {
+//
+                    //    final int random = org.apache.commons.lang3.RandomUtils.nextInt(1, 20);
+                    //    final int random2 = org.apache.commons.lang3.RandomUtils.nextInt(1, 2);
+//
+                    //    int value = (spawner.getQuantity() * random) / 100;
+                    //    if (random2 == 1) {
+                    //        toSpawn = amount + value;
+                    //    } else {
+                    //        toSpawn = amount - value;
+                    //    }
+                    //}
 
                     toSpawn = spawner.getQuantity() + amount;
 
@@ -123,6 +133,7 @@ public class EntityListener implements Listener {
         Player player = (Player) e.getDamager();
 
         if(e.getEntity().isDead() || !e.getEntity().isValid()) return;
+        if(!(e.getEntity() instanceof LivingEntity)) return;
 
         LivingEntity entity = (LivingEntity) e.getEntity();
         if(!entity.hasMetadata("stacked")) return;
@@ -131,11 +142,8 @@ public class EntityListener implements Listener {
         if(entity.getHealth() <= e.getDamage()){
 
             e.setCancelled(true);
-
             entity.setHealth(entity.getMaxHealth());
-
             int amount = entity.getMetadata("stacked").get(0).asInt();
-
             sendCommands(entity.getType(), player);
 
             if(amount > 1 && player.isSneaking()){
@@ -146,32 +154,6 @@ public class EntityListener implements Listener {
                 sendDrops(entity.getLocation(), entity.getType(), player, amount);
                 entity.remove();
             }
-        }
-    }
-
-    //@EventHandler
-    public void onDeathMob(EntityDeathEvent e){
-        Entity entity = e.getEntity();
-        Player player = e.getEntity().getKiller();
-        if(entity.getCustomName() == null) return;
-
-        if(entity.hasMetadata("stacked")){
-            e.getDrops().clear();
-
-            int amount = entity.getMetadata("stacked").get(0).asInt();
-            sendCommands(entity.getType(), player);
-
-            if(amount > 1 && player.isSneaking()) {
-                Entity newEntity = entity.getLocation().getWorld().spawnEntity(entity.getLocation(), entity.getType());
-                newEntity.setCustomName("§ex" + (amount - 1) + " " + MobType.valueOf(e.getEntityType().name().toUpperCase()).getName());
-                newEntity.setMetadata("stacked", new FixedMetadataValue(RaphaSpawners.getPlugin(), (amount - 1)));
-                SpawnerUtils.disableAI(newEntity);
-                sendDrops(entity.getLocation(), entity.getType(), player, 1);
-                return;
-            }
-
-            sendDrops(entity.getLocation(), entity.getType(), player, amount);
-            player.playSound(player.getLocation(), Sound.ITEM_BREAK, 1, 1);
         }
     }
 
@@ -232,10 +214,14 @@ public class EntityListener implements Listener {
     }
 
     private void sendCommands(EntityType type, Player player){
-        double chance = plugin.getConfigEntities().getDouble(type.name() + ".Rewards.Chance");
-        if(RandomUtils.nextDouble(0, 100) < chance)
             for (String s : plugin.getConfigEntities().getStringList(type.name() + ".Rewards.Commands")) {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), s.replace("%player%", player.getName()).replace("&","§"));
+                if(!s.contains(";")) continue;
+                final String[] values = s.split(";");
+                final double chance = Double.parseDouble(values[0]);
+                final String command = values[1];
+
+                if(RandomUtils.nextDouble(0, 100) < chance)
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replace("%player%", player.getName()).replace("&","§"));
             }
     }
 }

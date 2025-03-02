@@ -38,9 +38,8 @@ CHICKEN:
       Lore:
         - "&7Apenas testando xD"
   Rewards:
-    Chance: 5
     Commands:
-     - "give %player% dirt"
+     - "5;give %player% dirt"
 SQUID:
   Price: 1200
   Permission: 'spawner.use'

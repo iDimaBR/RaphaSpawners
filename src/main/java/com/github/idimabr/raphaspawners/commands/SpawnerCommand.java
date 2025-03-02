@@ -22,6 +22,11 @@ public class SpawnerCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String s, String[] args) {
 
+        if(!sender.hasPermission("raphaspawners.admin")){
+            sender.sendMessage("§cSem permissão!");
+            return false;
+        }
+
         if(args.length == 1 && args[0].equalsIgnoreCase("reload")){
             RaphaSpawners.getPlugin().getConfiguration().saveConfig();
             RaphaSpawners.getPlugin().getConfigMenu().saveConfig();

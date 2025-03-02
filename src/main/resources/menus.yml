@@ -39,8 +39,12 @@ Permissions:
 PermissionsMember:
   SizeRow: 6
   Title: "Permissões de %member%"
-  MaterialWithPermission: SLIME_BALL
-  MaterialNotPermission: BARRIER
+  WithPermission:
+    Material: SLIME_BALL
+    Data: 0
+  NotPermission:
+    Material: BARRIER
+    Data: 0
   BackSlot: 49
   PermissionsType:
     Lore:

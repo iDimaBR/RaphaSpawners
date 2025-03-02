@@ -11,7 +11,7 @@ Generator:
   SilkTouch: false
   RandomValueSpawn: false
   Delay:
-    Init: 20
+    Init: 4
   WorldBlackList:
     - 'worldexample'
   MobHead:

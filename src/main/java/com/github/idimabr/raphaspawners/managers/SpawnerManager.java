@@ -181,8 +181,8 @@ public class SpawnerManager {
 
         for (PermissionType permission : PermissionType.values()) {
 
-            Material withPermission = Material.getMaterial(plugin.getConfigMenu().getString("PermissionsMember.MaterialWithPermission"));
-            Material noPermission = Material.getMaterial(plugin.getConfigMenu().getString("PermissionsMember.MaterialNotPermission"));
+            Material withPermission = Material.getMaterial(plugin.getConfigMenu().getString("PermissionsMember.WithPermission.Material"));
+            Material noPermission = Material.getMaterial(plugin.getConfigMenu().getString("PermissionsMember.NotPermission.Material"));
             if(withPermission == null)
                 withPermission = Material.SLIME_BALL;
 
@@ -195,6 +195,10 @@ public class SpawnerManager {
                     .replace("&","§");
 
             ItemBuilder builder = new ItemBuilder(permissions.contains(permission) ? withPermission : noPermission).setName(name);
+
+            
+            builder.setDurability((short) plugin.getConfigMenu().getInt("PermissionsMember." + (permissions.contains(permission) ? "WithPermission" : "NotPermission") + ".Data"));
+
 
             List<String> lore = new ArrayList<>();
             for(String s : plugin.getConfigMenu().getStringList("PermissionsMember.PermissionsType.Lore")){
@@ -263,17 +267,17 @@ public class SpawnerManager {
         int maxTop = plugin.getConfigMenu().getInt("TopGenerator.NumberOfTOPS");
 
         for(int i = 0;i < maxTop;i++) {
-
             if (i < spawner.getTopSpawners().size()) {
                 Map.Entry<String, Integer> spawners = spawner.getTopSpawners().get(i);
 
                 int quantityGenerators = spawners.getValue();
 
-                int valuePrice;
+                double valuePrice;
                 try {
-                    valuePrice = plugin.getConfigEntities().getInt(spawner.getType().name() + ".Price") * quantityGenerators;
-                } catch (Exception ignored){
-                    valuePrice = 1000 * quantityGenerators;
+                    valuePrice = plugin.getConfigEntities().getDouble(spawner.getType().name() + ".Price") * quantityGenerators;
+                } catch (Exception ex){
+                    System.out.println("Ocorreu um erro: " + ex.getLocalizedMessage());
+                    valuePrice = 0;
                 }
 
                 List<String> lore = Lists.newArrayList();
