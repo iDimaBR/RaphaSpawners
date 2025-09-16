@@ -50,6 +50,13 @@
 
 ---
 
+## Demostration
+
+![Image 1](https://i.imgur.com/EVcPxd5.png)
+![Image 2](https://i.imgur.com/dqTMYH5.png)
+
+---
+
 ## Configuration
 - Fully customizable YAML files for:
   - Default GUI
